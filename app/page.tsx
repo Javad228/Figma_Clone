@@ -12,13 +12,18 @@ export default function Page() {
         canvasRef.current?.addRect();
     };
 
+    const handleAddFrame = () => {
+        canvasRef.current?.addFrame();
+    };
+
     return (
         <div className="h-screen w-screen flex flex-col justify-between">
-            <div className="items-center dark mr-auto ml-auto h-[90%] w-full">
-                <Canvas ref={canvasRef} />
-            </div>
-            <div className="items-center w-min dark mr-auto ml-auto mt-auto">
-                <FloatingDockDemo onShapesClick={handleAddRect} />
+            <div className="relative items-center dark mr-auto ml-auto h-[100%] w-full">
+                <Canvas ref={canvasRef}/>
+
+                <div className="absolute bottom-0 left-0 right-0 flex items-center justify-center ">
+                    <FloatingDockDemo onShapesClick={handleAddRect} onFrameClick={handleAddFrame}/>
+                </div>
             </div>
         </div>
     );

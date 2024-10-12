@@ -1,16 +1,24 @@
 "use client"; // Next.js app router
 
-import React, { useEffect, useRef, forwardRef, useImperativeHandle } from "react";
+import React, {
+    useEffect,
+    useRef,
+    forwardRef,
+    useImperativeHandle,
+} from "react";
 import { fabric } from "fabric";
 
 export interface CanvasHandles {
     addRect: () => void;
+    addFrame: () => void;
     // You can expose more methods if needed
 }
 
 const CanvasComponent = forwardRef<CanvasHandles>((props, ref) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const fabricCanvasRef = useRef<fabric.Canvas | null>(null);
+    const isAddingRectRef = useRef<boolean>(false); // Ref to track add rectangle mode
+    const isAddingFrameRef = useRef<boolean>(false); // Ref to track add rectangle mode
 
     // Initialize the Fabric canvas
     const initCanvas = () => {
@@ -33,16 +41,9 @@ const CanvasComponent = forwardRef<CanvasHandles>((props, ref) => {
                 fabric.Object.prototype.cornerStrokeColor = "#2BEBC8";
                 fabric.Object.prototype.cornerSize = 6;
 
-                // Add an initial rectangle (optional)
-                const initialRect = new fabric.Rect({
-                    height: 280,
-                    width: 200,
-                    stroke: "#2BEBC8",
-                    fill: "transparent",
-                    left: 100,
-                    top: 60,
-                });
-                // fabricCanvas.add(initialRect);
+                // Add event listener for mouse clicks
+                fabricCanvas.on("mouse:down", handleCanvasClick);
+
                 fabricCanvas.requestRenderAll();
 
                 fabricCanvasRef.current = fabricCanvas;
@@ -63,6 +64,41 @@ const CanvasComponent = forwardRef<CanvasHandles>((props, ref) => {
         }
     };
 
+    // Handle canvas click events
+    const handleCanvasClick = (options: fabric.IEvent) => {
+        if (isAddingRectRef.current && fabricCanvasRef.current) {
+            const pointer = fabricCanvasRef.current.getPointer(options.e);
+            const rect = new fabric.Rect({
+                height: 280,
+                width: 200,
+                stroke: "#2BEBC8",
+                fill: "transparent",
+                left: pointer.x,
+                top: pointer.y,
+            });
+            fabricCanvasRef.current.add(rect);
+            fabricCanvasRef.current.requestRenderAll();
+
+            // Reset the mode
+            isAddingRectRef.current = false;
+        }else if (isAddingFrameRef.current && fabricCanvasRef.current) {
+            const pointer = fabricCanvasRef.current.getPointer(options.e);
+            const rect = new fabric.Rect({
+                height: 280,
+                width: 200,
+                stroke: "#2BEBC8",
+                fill: "white",
+                left: pointer.x,
+                top: pointer.y,
+            });
+            fabricCanvasRef.current.add(rect);
+            fabricCanvasRef.current.requestRenderAll();
+
+            // Reset the mode
+            isAddingFrameRef.current = false;
+        }
+    };
+
     useEffect(() => {
         initCanvas();
 
@@ -73,28 +109,35 @@ const CanvasComponent = forwardRef<CanvasHandles>((props, ref) => {
         return () => {
             window.removeEventListener("resize", resizeCanvas);
             if (fabricCanvasRef.current) {
+                fabricCanvasRef.current.off("mouse:down", handleCanvasClick);
                 fabricCanvasRef.current.dispose();
                 fabricCanvasRef.current = null;
             }
         };
     }, []);
 
-    // Expose the addRect method to parent components
+    // Expose methods to parent components
     useImperativeHandle(ref, () => ({
-        addRect: () => {
-            if (fabricCanvasRef.current) {
-                const rect = new fabric.Rect({
-                    height: 280,
-                    width: 200,
-                    stroke: "#2BEBC8",
-                    fill: "transparent",
-                    left: 100,
-                    top: 60,
-                });
-                fabricCanvasRef.current.add(rect);
-                fabricCanvasRef.current.requestRenderAll();
-            }
+        addFrame: () => {
+            isAddingFrameRef.current = true;
+            // if (fabricCanvasRef.current) {
+            //     const rect = new fabric.Rect({
+            //         height: 280,
+            //         width: 200,
+            //         stroke: "#2BEBC8",
+            //         fill: "white",
+            //         left: 100,
+            //         top: 60,
+            //     });
+            //     fabricCanvasRef.current.add(rect);
+            //     fabricCanvasRef.current.requestRenderAll();
+            // }
         },
+        addRect: () => {
+            // Set the mode to add rectangle on next canvas click
+            isAddingRectRef.current = true;
+        },
+
         // You can expose more methods here if needed
     }));
 
